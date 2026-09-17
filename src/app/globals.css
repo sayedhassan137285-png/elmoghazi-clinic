@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f6f4ee;
+  --surface: #ffffff;
+  --surface-2: #efede4;
+  --text: #1f2b28;
+  --muted: #66756f;
+  --border: #e4e1d4;
+  --danger: #b3261e;
+  --primary: #146c43;
+  --primary-strong: #0f5132;
+  --primary-soft: #e7f3ec;
+  --accent: #c9a227;
+  color-scheme: light;
+}
+[data-theme="royal"]  { --primary:#1e3a8a; --primary-strong:#172554; --primary-soft:#e7ecfb; --accent:#b08d2f; }
+[data-theme="ocean"]  { --primary:#0e7490; --primary-strong:#155e75; --primary-soft:#e0f5fa; --accent:#d97706; }
+[data-theme="rose"]   { --primary:#be185d; --primary-strong:#9d174d; --primary-soft:#fce7f1; --accent:#a16207; }
+[data-theme="sunset"] { --primary:#c2410c; --primary-strong:#9a3412; --primary-soft:#ffedd5; --accent:#b45309; }
+[data-mode="dark"] {
+  --bg:#0f1513; --surface:#171f1c; --surface-2:#1e2925;
+  --text:#e7ece9; --muted:#93a29b; --border:#263230; --primary-soft:#1d2f27;
+  color-scheme: dark;
+}
+
+@layer base {
+  ::selection { background: var(--primary); color: #fff; }
+  * { border-color: var(--border); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+}
+
+@layer components {
+  .card { @apply rounded-2xl border bg-surface shadow-sm; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition active:scale-[.98] disabled:pointer-events-none disabled:opacity-50; }
+  .btn-primary { @apply btn text-white; background: var(--primary); }
+  .btn-primary:hover { background: var(--primary-strong); }
+  .btn-ghost { @apply btn border bg-surface hover:bg-surface-2; }
+  .btn-danger { @apply btn text-white; background: var(--danger); }
+  .btn-wa { @apply btn text-white; background: #25D366; }
+  .btn-wa:hover { background: #1da851; }
+  .btn-sm { @apply rounded-[10px] px-3 py-1.5 text-[13px]; }
+  .input { @apply w-full rounded-xl border bg-surface px-3.5 py-2.5 text-sm outline-none transition; }
+  .input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+  .label { @apply mb-1.5 block text-sm font-bold; }
+  .badge { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold; }
+  .table-th { @apply px-4 py-3 text-start text-xs font-extrabold text-muted; }
+  .table-td { @apply px-4 py-3 text-sm; }
+}
