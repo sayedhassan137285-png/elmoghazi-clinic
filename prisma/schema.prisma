@@ -1,1 +1,338 @@
+// Prisma schema for عيادة المغازي — fully reconstructed from API usage.
 
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ──────────────── Enums ────────────────
+
+enum Role {
+  DOCTOR
+  SECRETARY
+}
+
+enum VisitType {
+  CHECKUP
+  FOLLOWUP
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum WaitingStatus {
+  WAITING
+  SERVED
+  CANCELLED
+}
+
+enum LaserRecordStatus {
+  ACTIVE
+  COMPLETED
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+// ──────────────── Models ────────────────
+
+model User {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  name             String
+  password         String
+  role             Role     @default(SECRETARY)
+  permissions      Json      @default("[]")
+  twoFactorEnabled Boolean  @default(false)
+  twoFactorSecret  String?
+  blocked          Boolean  @default(false)
+  blockedReason    String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  recoveryCodes RecoveryCode[]
+  auditLogs     AuditLog[]
+}
+
+model RecoveryCode {
+  id        String   @id @default(cuid())
+  userId    String
+  code      String
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id          String      @id @default(cuid())
+  userId      String?
+  userName    String?
+  userRole    String?
+  action      String
+  entity      String?
+  entityId    String?
+  description String?
+  ipAddress   String      @default("unknown")
+  userAgent   String      @default("unknown")
+  createdAt   DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([userId])
+}
+
+model FailedLogin {
+  id        String   @id @default(cuid())
+  email     String
+  ipAddress String
+  createdAt DateTime @default(now())
+
+  @@index([email, ipAddress, createdAt])
+}
+
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String @default("")
+}
+
+model Patient {
+  id         String    @id @default(cuid())
+  name       String
+  phone      String
+  age        Int?
+  address    String?
+  diagnosis  String?
+  starred    Boolean   @default(false)
+  improved   Boolean   @default(false)
+  heart      Boolean   @default(false)
+  danger     Boolean   @default(false)
+  lastVisit  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  visits         Visit[]
+  sessions       LaserSession[]
+  laserRecords   LaserRecord[]
+  notes          Note[]
+  prescriptions  Prescription[]
+  appointments   Appointment[]
+  beforeAfter    BeforeAfter[]
+  transactions   Transaction[]
+  waitingEntries WaitingListEntry[]
+
+  @@index([phone])
+  @@index([createdAt])
+}
+
+model Visit {
+  id        String    @id @default(cuid())
+  patientId String
+  type      VisitType
+  price     Float     @default(0)
+  date      DateTime  @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([date])
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  type        TransactionType
+  category    String
+  amount      Float
+  patientId   String?
+  description String?
+  date        DateTime        @default(now())
+
+  patient Patient? @relation(fields: [patientId], references: [id], onDelete: SetNull)
+
+  @@index([type, date])
+  @@index([patientId])
+}
+
+model Appointment {
+  id        String   @id @default(cuid())
+  patientId String
+  date      DateTime
+  time      String
+  type      String?
+  done      Boolean  @default(false)
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([date, time, done])
+  @@index([patientId])
+}
+
+model Prescription {
+  id        String    @id @default(cuid())
+  patientId String
+  diagnosis String?
+  date      DateTime  @default(now())
+
+  patient Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  items   PrescriptionItem[]
+
+  @@index([patientId])
+  @@index([date])
+}
+
+model PrescriptionItem {
+  id               String  @id @default(cuid())
+  prescriptionId   String
+  medicationName   String
+  dose             String  @default("")
+  showInstructions Boolean @default(true)
+  showDose         Boolean @default(true)
+
+  prescription Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+
+  @@index([prescriptionId])
+}
+
+model Medication {
+  id                  String   @id @default(cuid())
+  name                String
+  defaultDose         String   @default("")
+  defaultInstructions String   @default("")
+  createdAt           DateTime @default(now())
+}
+
+model InventoryItem {
+  id          String   @id @default(cuid())
+  name        String
+  quantity    Int      @default(0)
+  minQuantity Int      @default(0)
+  unitPrice   Float    @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model Doctor {
+  id                String   @id @default(cuid())
+  name              String
+  specialty         String   @default("")
+  checkupPercentage Float    @default(50)
+  laserPercentage   Float    @default(50)
+  createdAt         DateTime @default(now())
+}
+
+model Service {
+  id       String   @id @default(cuid())
+  name     String
+  category String
+  price    Float    @default(0)
+  duration Int      @default(15)
+  createdAt DateTime @default(now())
+}
+
+model WaitingListEntry {
+  id          String        @id @default(cuid())
+  patientName String
+  phone       String?
+  priority    Int           @default(2)
+  status      WaitingStatus @default(WAITING)
+  patientId   String?
+  createdAt   DateTime      @default(now())
+
+  patient Patient? @relation(fields: [patientId], references: [id], onDelete: SetNull)
+
+  @@index([status, priority, createdAt])
+  @@index([patientId])
+}
+
+model LaserPackage {
+  id            String   @id @default(cuid())
+  name          String
+  bodyArea      String
+  sessionsCount Int
+  price         Float    @default(0)
+  createdAt     DateTime @default(now())
+
+  laserRecords LaserRecord[]
+}
+
+model LaserRecord {
+  id            String            @id @default(cuid())
+  patientId     String
+  area          String
+  totalSessions Int
+  status        LaserRecordStatus @default(ACTIVE)
+  packageId     String?
+  createdAt     DateTime          @default(now())
+
+  patient  Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  pkg      LaserPackage?   @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  sessions LaserSession[]
+
+  @@index([patientId])
+  @@index([status])
+}
+
+model LaserSession {
+  id            String   @id @default(cuid())
+  laserRecordId String
+  patientId     String
+  sessionNumber Int
+  paid          Boolean  @default(false)
+  date          DateTime @default(now())
+
+  laserRecord LaserRecord @relation(fields: [laserRecordId], references: [id], onDelete: Cascade)
+  patient     Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([laserRecordId])
+  @@index([patientId])
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  patientId String
+  content   String
+  createdAt DateTime @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+}
+
+model BeforeAfter {
+  id        String   @id @default(cuid())
+  patientId String
+  beforeUrl String?
+  afterUrl  String?
+  note      String?
+  createdAt DateTime @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+}
+
+model MessageLog {
+  id         String        @id @default(cuid())
+  patientId  String?
+  phone      String
+  template   String
+  body       String
+  status     MessageStatus @default(PENDING)
+  sentAt     DateTime?
+  createdAt  DateTime      @default(now())
+
+  @@index([status, createdAt])
+  @@index([phone])
+}
