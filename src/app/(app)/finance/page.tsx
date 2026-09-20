@@ -94,4 +94,65 @@ export default function FinancePage() {
                       {x.type === "INCOME" ? "إيراد" : "مصروف"}
                     </span>
                   </td>
-                  <td
+                  <td className="table-td font-bold">{x.category}</td>
+                  <td className="table-td font-bold text-primary">{money(x.amount)}</td>
+                  <td className="table-td text-muted">{x.patient?.name ?? "—"}</td>
+                  <td className="table-td text-muted">{x.description ?? "—"}</td>
+                  <td className="table-td text-xs text-muted">
+                    {new Date(x.date).toLocaleDateString("ar-EG")}
+                  </td>
+                  <td className="table-td">
+                    <button
+                      className="btn-ghost btn-sm text-danger"
+                      onClick={() => remove(x.id)}
+                      title="حذف"
+                    >
+                      حذف
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <Modal open={modal} onClose={() => setModal(false)} title="معاملة مالية جديدة">
+        <form onSubmit={save} className="space-y-3">
+          {formError && (
+            <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-danger">
+              {formError}
+            </div>
+          )}
+          <Field label="النوع">
+            <select name="type" required className="input">
+              <option value="INCOME">إيراد</option>
+              <option value="EXPENSE">مصروف</option>
+            </select>
+          </Field>
+          <Field label="التصنيف">
+            <input name="category" required className="input" placeholder="مثال: كشف، إيجار، رواتب" />
+          </Field>
+          <Field label="المبلغ (ج.م)">
+            <input name="amount" type="number" min={1} step="any" required className="input" />
+          </Field>
+          <Field label="المريض (اختياري)">
+            <select name="patientId" className="input">
+              <option value="">— بدون مريض —</option>
+              {patients.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="الوصف (اختياري)">
+            <textarea name="description" className="input min-h-[70px]" />
+          </Field>
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" className="btn-ghost" onClick={() => setModal(false)}>إلغاء</button>
+            <button type="submit" className="btn-primary">حفظ المعاملة</button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  );
+}
